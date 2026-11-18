@@ -15,13 +15,13 @@ import websocket
 
 import os
 PORT = int(os.environ.get("CDP_PORT", "9333"))
-BASE = "http://127.0.0.1:8123"
+BASE = os.environ.get("BASE", "http://127.0.0.1:8080").rstrip("/")
 
 
 class Tab:
     def __init__(self, port=PORT):
         targets = json.load(urllib.request.urlopen(f"http://127.0.0.1:{port}/json/list", timeout=20))
-        pages = [t for t in targets if t.get("type") == "page" and "127.0.0.1:8099" in t.get("url", "")]
+        pages = [t for t in targets if t.get("type") == "page" and t.get("url", "").startswith(BASE)]
         if not pages:
             try:
                 urllib.request.urlopen(urllib.request.Request(f"http://127.0.0.1:{port}/json/new?about:blank", method="PUT"), timeout=20)

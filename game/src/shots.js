@@ -164,6 +164,15 @@ export function stageShot(game, renderer, name) {
     game.notifications.length = 0;
     game.notify('Norte — the towers are close now', '#f2d98a');
     game.runSteps(120, scripted({ y: -1, hold: ['KeyW'] }), () => aimAt(game.player.x + 400, game.player.y));
+    // This frame is the quiet drive, not a chase: whatever the traffic did on the way through,
+    // the HUD shows the city and the job board, and no cruiser is on the road.
+    game.wanted.heat = 0;
+    game.wanted.stars = 0;
+    game.wanted.unseen = 0;
+    for (let k = game.vehicles.length - 1; k >= 0; k -= 1) {
+      const v = game.vehicles[k];
+      if (v.driver === 'police') game.vehicles.splice(k, 1);
+    }
     renderer.snapCamera(game);
     paint(renderer, game);
     return true;

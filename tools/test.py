@@ -57,16 +57,20 @@ def main(seed=7):
     tab.key("KeyD", "d", 68, False)
     tab.pump(0.1)
     moved = tab.ev("[window.__game.player.x, window.__game.player.y]")
-    check("walks", abs(moved[0] - start[0]) > 40, f"{start} -> {moved}")
+    walked = abs(moved[0] - start[0])
+    check("walks", walked > 40, f"{start} -> {moved}")
 
     # --- run ---
+    runStart = tab.ev("[window.__game.player.x, window.__game.player.y]")
     tab.key("ShiftLeft", "Shift", 16, True)
     tab.key("KeyD", "d", 68, True)
     advance(tab, 1.0)
     tab.key("KeyD", "d", 68, False)
     tab.key("ShiftLeft", "Shift", 16, False)
     tab.pump(0.2)
-    check("runs", tab.ev("window.__game.player.running === false && true"), "shift state consumed")
+    runMoved = tab.ev("[window.__game.player.x, window.__game.player.y]")
+    runDist = abs(runMoved[0] - runStart[0])
+    check("runs", runDist > walked * 0.9, f"{round(runDist)} units in 1.0s vs {round(walked)} walking 1.2s")
 
     # --- steal a traffic car: standing next to it, press E ---
     info = tab.ev("""(()=>{const g=window.__game;
@@ -122,10 +126,18 @@ def main(seed=7):
 
     # --- cool down: hide far away with no line of sight ---
     heat0 = tab.ev("window.__game.wanted.heat")
-    tab.ev("(()=>{const g=window.__game; g.player.x=60; g.player.y=3300; g.vehicles.forEach(v=>{if(v.driver==='police') v.gone=true;}); g.cops.forEach(c=>c.dead=true);})()")
+    tab.ev("""(()=>{const g=window.__game;
+      // Break the pursuit the way the game can: the cruisers leave the world and no fresh
+      // one is dispatched, then the player stands in the far corner with nobody watching.
+      g.vehicles.forEach(v=>{ if (v.driver === 'police') { v.gone = true; v.dead = true; } });
+      g.cops.forEach(c=>{ c.dead = true; });
+      g.wanted.spawnTimer = 1e9;
+      g.player.x = 60; g.player.y = 3300; g.player.vx = 0; g.player.vy = 0; g.player.inCar = null;
+      return {heat:g.wanted.heat, unseen:g.wanted.unseen};})()""")
     advance(tab, 20.0)
     heat1 = tab.ev("window.__game.wanted.heat")
-    check("wanted cools", heat1 < heat0 - 0.8, f"{round(heat0,2)} -> {round(heat1,2)}")
+    unseen = tab.ev("window.__game.wanted.unseen")
+    check("wanted cools", heat1 < heat0 - 0.8, f"{round(heat0,2)} -> {round(heat1,2)} after {round(unseen,1)}s unseen")
 
     # --- a mission to its payout ---
     heat0 = 0

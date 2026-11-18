@@ -212,7 +212,8 @@ export function runOverPed(game, p, car) {
     p.dead = true;
     p.deadAngle = car.angle;
     p.timer = 0;
-    if (game.witnessCrime) game.witnessCrime('murder', p.x, p.y);
+    // The crime is reported by whoever was driving: runOverPed sees only the car, so
+    // sim.js raises the heat for the player's kills and traffic kills raise none.
   } else {
     p.down = 1.4;
     p.state = 'flee';
